@@ -1,0 +1,108 @@
+---
+import { getCollection } from "astro:content";
+
+const posts = await getCollection("posts");
+const sorted = posts.sort((a, b) => {
+  const aTime = new Date(a.data.date).getTime();
+  const bTime = new Date(b.data.date).getTime();
+  return bTime - aTime;
+});
+
+const sections = [
+  { key: "personal-branding", title: "1、个人品牌与投递策略" },
+  { key: "architecture-depth", title: "2、架构设计与工程化深度" },
+  { key: "business-breakthrough", title: "3、业务破局与项目复盘" },
+  { key: "tech-leadership", title: "4、技术领导力与团队管理" },
+  { key: "reverse-interview", title: "5、反向面试与控场技巧" },
+] as const;
+
+type SectionKey = (typeof sections)[number]["key"];
+
+const keywordMap: Record<SectionKey, string[]> = {
+  "personal-branding": ["个人品牌", "投递", "简历", "resume", "offer"],
+  "architecture-depth": ["架构", "工程化", "system-design", "design"],
+  "business-breakthrough": ["业务", "破局", "项目", "复盘", "project"],
+  "tech-leadership": ["领导力", "团队管理", "协作", "管理", "star"],
+  "reverse-interview": ["反向面试", "控场", "沟通", "提问", "技巧"],
+};
+
+const getSectionPosts = (sectionKey: SectionKey) =>
+  sorted.filter((post) => {
+    const tags = (post.data.tags ?? []).map((tag) => tag.toLowerCase());
+    const title = post.data.title.toLowerCase();
+    const keywords = keywordMap[sectionKey];
+
+    return keywords.some((word: string) => {
+      const normalized = word.toLowerCase();
+      return (
+        title.includes(normalized) ||
+        tags.some((tag) => tag.includes(normalized))
+      );
+    });
+  });
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <title>面试要点 Posts</title>
+  </head>
+  <body>
+    <main
+      style="max-width: 720px; margin: 48px auto; padding: 0 16px; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;"
+    >
+      <header style="margin-bottom: 24px;">
+        <h1 style="margin: 0 0 8px;">面试要点 Posts</h1>
+        <p style="margin: 0; color: #555;">
+          记录面试学习过程与可复用的要点模板。
+        </p>
+      </header>
+
+      {
+        sections.map((section) => {
+          const sectionPosts = getSectionPosts(section.key);
+
+          return (
+            <section style="margin-top: 28px;">
+              <h2 style="margin: 0 0 10px; font-size: 20px;">
+                {section.title}
+              </h2>
+              {sectionPosts.length === 0 ? (
+                <p style="margin: 0; color: #666;">暂未归档文章。</p>
+              ) : (
+                <ul style="list-style: none; padding: 0; margin: 0;">
+                  {sectionPosts.map((post) => (
+                    <li style="padding: 12px 0; border-bottom: 1px solid #eee;">
+                      <a
+                        href={`/posts/${post.id}`}
+                        style="text-decoration: none; color: inherit;"
+                      >
+                        <div style="display: flex; justify-content: space-between; gap: 12px; align-items: baseline;">
+                          <h3 style="margin: 0; font-size: 17px;">
+                            {post.data.title}
+                          </h3>
+                          <time style="color: #666; font-size: 13px;">
+                            {post.data.date}
+                          </time>
+                        </div>
+                        {post.data.description ? (
+                          <p style="margin: 8px 0 0; color: #555;">
+                            {post.data.description}
+                          </p>
+                        ) : null}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          );
+        })
+      }
+    </main>
+  </body>
+</html>
